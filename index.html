@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URLForge</title>
+    <style>
+        /* === CSS RESET AND BASE STYLES === */
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #38b000;
+            --danger: #d90429;
+            --warning: #ffb703;
+            --info: #00b4d8;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --border-radius: 6px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+            --font-main: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: var(--light);
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* === LAYOUT === */
+        .container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .history-sidebar {
+            width: 300px;
+            padding: 1rem;
+            background-color: var(--gray-light);
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+            transition: var(--transition);
+            height: 100%;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* === RESPONSIVE LAYOUT === */
+        @media (max-width: 768px) {
+            main {
+                flex-direction: column;
+            }
+
+            .history-sidebar {
+                width: 100%;
+                max-height: 30vh;
+                border-right: none;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .content-area {
+                overflow-y: auto;
+            }
+        }
+
+        /* === COMPONENTS === */
+        /* Card component */
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem;
+            background-color: var(--gray-light);
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.25);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            border: none;
+            margin-right: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #2d9300;
+        }
+
+        /* URL Preview */
+        .url-preview {
+            background-color: var(--gray-light);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+            word-break: break-all;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+
+        .url-preview span.variable {
+            background-color: var(--info);
+            color: white;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin: 0 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Search Box */
+        .search-container {
+            margin-bottom: 1rem;
+        }
+
+        /* History Items */
+        .domain-group {
+            margin-bottom: 1rem;
+        }
+
+        .domain-header {
+            padding: 0.5rem;
+            background-color: white;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .domain-header:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .domain-items {
+            margin-left: 1rem;
+            display: none;
+        }
+
+        .domain-items.active {
+            display: block;
+        }
+
+        .url-item {
+            padding: 0.5rem;
+            background-color: white;
+            border-radius: var(--border-radius);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .url-item:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .url-item-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .url-item-path {
+            font-size: 0.875rem;
+            color: var(--gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .url-item-actions {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 10px;
+            background-color: var(--gray-light);
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            max-width: 300px;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s, fadeOut 0.5s 2.5s forwards;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--info);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Auth button */
+        .github-auth {
+            display: none;
+            margin-bottom: 1rem;
+        }
+
+        /* Variables form highlight */
+        .form-variable {
+            border-left: 3px solid var(--info);
+            padding-left: 0.5rem;
+        }
+
+        /* Mobile sidebar toggle */
+        .sidebar-toggle {
+            display: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .history-sidebar {
+                max-height: 0;
+                padding: 0 1rem;
+                overflow: hidden;
+            }
+
+            .history-sidebar.expanded {
+                max-height: 30vh;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>URLForge</h1>
+        </header>
+        <main>
+            <aside class="history-sidebar" id="historySidebar">
+                <div class="search-container">
+                    <input type="text" class="form-control" id="searchHistory" placeholder="Search saved URLs...">
+                </div>
+                <div id="historyContainer">
+                    <!-- History items will be dynamically populated here -->
+                    <div class="empty-history" id="emptyHistory">
+                        <p>No saved URLs yet. Save one to see it here.</p>
+                    </div>
+                </div>
+            </aside>
+            <div class="content-area">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    ≡ Toggle History
+                </button>
+                
+                <div class="card">
+                    <div class="card-header">URL Template</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="urlTemplate" class="form-label">Enter URL with variables in {curly braces}</label>
+                            <input type="text" class="form-control" id="urlTemplate" 
+                                placeholder="https://{domain}/path?var1={var1}&var2={var2}">
+                        </div>
+                        <button class="btn btn-primary" id="parseUrlBtn">Parse URL</button>
+                    </div>
+                </div>
+
+                <div class="card" id="variablesCard" style="display: none;">
+                    <div class="card-header">
+                        <span>Variables</span>
+                        <div>
+                            <button class="btn btn-outline btn-small" id="resetVariablesBtn">Reset</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="variablesForm">
+                            <!-- Dynamically generated form fields will appear here -->
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card" id="previewCard" style="display: none;">
+                    <div class="card-header">
+                        <span>Generated URL</span>
+                        <div>
+                            <button class="btn btn-primary btn-small" id="copyUrlBtn">Copy</button>
+                            <button class="btn btn-success btn-small" id="saveUrlBtn">Save</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="url-preview" id="urlPreview">
+                            <!-- Generated URL will appear here -->
+                        </div>
+                        
+                        <div class="form-group" id="saveNameGroup" style="display: none;">
+                            <label for="saveName" class="form-label">Name (optional)</label>
+                            <input type="text" class="form-control" id="saveName" placeholder="My URL Template">
+                        </div>
+
+                        <div class="toggle-container">
+                            <span>Sync with GitHub</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="githubSyncToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <div id="githubStatus">Not connected</div>
+                        </div>
+                        
+                        <div class="github-auth" id="githubAuth">
+                            <button class="btn btn-outline" id="githubAuthBtn">Connect to GitHub</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toastContainer">
+        <!-- Toast notifications will appear here -->
+    </div>
+
+    <script>
+        // ===========================
+        // UTILITY FUNCTIONS
+        // ===========================
+        
+        /**
+         * Creates a toast notification
+         * @param {string} message - The message to display
+         * @param {string} type - The type of toast ('success', 'error', 'info')
+         */
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            toastContainer.appendChild(toast);
+            
+            // Remove toast after animation completes
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        /**
+         * Extracts domain from a URL
+         * @param {string} url - The URL to extract domain from
+         * @returns {string} The extracted domain
+         */
+        function extractDomain(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname;
+            } catch (error) {
+                return '';
+            }
+        }
+
+        /**
+         * Generates a unique ID
+         * @returns {string} A unique ID
+         */
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        /**
+         * Formats a date for display
+         * @param {number} timestamp - The timestamp to format
+         * @returns {string} Formatted date string
+         */
+        function formatDate(timestamp) {
+            return new Date(timestamp).toLocaleString();
+        }
+
+        // ===========================
+        // URL PARSING & MANIPULATION
+        // ===========================
+        
+        /**
+         * Parses a URL template and extracts variable placeholders
+         * @param {string} urlTemplate - The URL template string
+         * @returns {object} Object containing parsed URL data
+         */
+        function parseUrlTemplate(urlTemplate) {
+            // Regular expression to match {variable} patterns
+            const variableRegex = /{([^}]+)}/g;
+            const variables = {};
+            let match;
+            
+            // Find all variable matches
+            while ((match = variableRegex.exec(urlTemplate)) !== null) {
+                variables[match[1]] = '';
+            }
+            
+            // Extract domain
+            const domain = extractDomain(urlTemplate.replace(variableRegex, 'placeholder'));
+            
+            return {
+                template: urlTemplate,
+                variables: variables,
+                domain: domain
+            };
+        }
+
+        /**
+         * Builds a URL by replacing template variables with actual values
+         * @param {string} template - The URL template
+         * @param {object} variables - Object containing variable values
+         * @returns {string} The constructed URL
+         */
+        function buildUrl(template, variables) {
+            let result = template;
+            
+            // Replace each variable placeholder with its value
+            for (const [name, value] of Object.entries(variables)) {
+                const pattern = new RegExp(`{${name}}`, 'g');
+                result = result.replace(pattern, encodeURIComponent(value));
+            }
+            
+            return result;
+        }
+
+        /**
+         * Creates a highlighted preview of the URL with variables visually distinct
+         * @param {string} template - The URL template
+         * @param {object} variables - Object containing variable values
+         * @returns {string} HTML string with highlighted variables
+         */
+        function createHighlightedUrl(template, variables) {
+            let result = template;
+            
+            // Replace each variable placeholder with a highlighted span
+            for (const [name, value] of Object.entries(variables)) {
+                const pattern = new RegExp(`{${name}}`, 'g');
+                result = result.replace(pattern, `<span class="variable">${encodeURIComponent(value)}</span>`);
+            }
+            
+            return result;
+        }
+
+        // ===========================
+        // STORAGE MANAGEMENT
+        // ===========================
+        
+        // Storage class to handle IndexedDB operations
+        class StorageManager {
+            constructor() {
+                this.dbName = 'urlTransformerDB';
+                this.dbVersion = 1;
+                this.storeName = 'urlTemplates';
+                this.db = null;
+                this.initDb();
+            }
+            
+            /**
+             * Initializes the IndexedDB database
+             */
+            async initDb() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Create object store with domain index
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+                            store.createIndex('domain', 'domain', { unique: false });
+                            store.createIndex('lastUsed', 'lastUsed', { unique: false });
+                        }
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve();
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('IndexedDB error:', event.target.error);
+                        // Fallback to localStorage
+                        this.db = null;
+                        reject(event.target.error);
+                    };
+                });
+            }
+            
+            /**
+             * Saves a URL template to storage
+             * @param {object} templateData - The template data to save
+             * @returns {Promise} Promise resolving to the saved template ID
+             */
+            async saveTemplate(templateData) {
+                // Ensure DB is initialized
+                if (!this.db) {
+                    await this.initDb().catch(() => {
+                        // Use localStorage fallback
+                        return this.saveTemplateLocalStorage(templateData);
+                    });
+                }
+                
+                if (!this.db) {
+                    return this.saveTemplateLocalStorage(templateData);
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    // If no ID is provided, generate one
+                    if (!templateData.id) {
+                        templateData.id = generateId();
+                    }
+                    
+                    // Set timestamps
+                    templateData.created = templateData.created || Date.now();
+                    templateData.lastUsed = Date.now();
+                    
+                    const request = store.put(templateData);
+                    
+                    request.onsuccess = () => {
+                        resolve(templateData.id);
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('Error saving template:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+            
+            /**
+             * Fallback method to save template to localStorage
+             * @param {object} templateData - The template data to save
+             * @returns {string} The saved template ID
+             */
+            saveTemplateLocalStorage(templateData) {
+                // If no ID is provided, generate one
+                if (!templateData.id) {
+                    templateData.id = generateId();
+                }
+                
+                // Set timestamps
+                templateData.created = templateData.created || Date.now();
+                templateData.lastUsed = Date.now();
+                
+                // Get existing templates
+                let templates = JSON.parse(localStorage.getItem('urlTemplates') || '[]');
+                
+                // Update if exists, otherwise add
+                const existingIndex = templates.findIndex(t => t.id === templateData.id);
+                if (existingIndex >= 0) {
+                    templates[existingIndex] = templateData;
+                } else {
+                    templates.push(templateData);
+                }
+                
+                // Save back to localStorage
+                localStorage.setItem('urlTemplates', JSON.stringify(templates));
+                
+                return templateData.id;
+            }
+            
+            /**
+             * Gets all templates from storage
+             * @returns {Promise<Array>} Promise resolving to array of templates
+             */
+            async getAllTemplates() {
+                // Ensure DB is initialized
+                if (!this.db) {
+                    await this.initDb().catch(() => {
+                        // Use localStorage fallback
+                        return this.getAllTemplatesLocalStorage();
+                    });
+                }
+                
+                if (!this.db) {
+                    return this.getAllTemplatesLocalStorage();
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.index('lastUsed').openCursor(null, 'prev');
+                    
+                    const templates = [];
+                    
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            templates.push(cursor.value);
+                            cursor.continue();
+                        } else {
+                            resolve(templates);
+                        }
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('Error getting templates:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+            
+            /**
+             * Fallback method to get all templates from localStorage
+             * @returns {Array} Array of templates
+             */
+            getAllTemplatesLocalStorage() {
+                return JSON.parse(localStorage.getItem('urlTemplates') || '[]');
+            }
+            
+            /**
+             * Gets templates for a specific domain
+             * @param {string} domain - The domain to filter by
+             * @returns {Promise<Array>} Promise resolving to array of templates
+             */
+            async getTemplatesByDomain(domain) {
+                // Get all templates and filter by domain
+                const allTemplates = await this.getAllTemplates();
+                return allTemplates.filter(template => template.domain === domain);
+            }
+            
+            /**
+             * Deletes a template from storage
+             * @param {string} id - The template ID to delete
+             * @returns {Promise} Promise resolving when deletion is complete
+             */
+            async deleteTemplate(id) {
+                // Ensure DB is initialized
+                if (!this.db) {
+                    await this.initDb().catch(() => {
+                        // Use localStorage fallback
+                        return this.deleteTemplateLocalStorage(id);
+                    });
+                }
+                
+                if (!this.db) {
+                    return this.deleteTemplateLocalStorage(id);
+                }
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.delete(id);
+                    
+                    request.onsuccess = () => {
+                        resolve();
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('Error deleting template:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+            }
+            
+            /**
+             * Fallback method to delete template from localStorage
+             * @param {string} id - The template ID to delete
+             */
+            deleteTemplateLocalStorage(id) {
+                // Get existing templates
+                let templates = JSON.parse(localStorage.getItem('urlTemplates') || '[]');
+                
+                // Filter out the template to delete
+                templates = templates.filter(t => t.id !== id);
+                
+                // Save back to localStorage
+                localStorage.setItem('urlTemplates', JSON.stringify(templates));
+            }
+            
+            /**
+             * Searches templates by query
+             * @param {string} query - The search query
+             * @returns {Promise<Array>} Promise resolving to filtered templates
+             */
+            async searchTemplates(query) {
+                if (!query) {
+                    return this.getAllTemplates();
+                }
+                
+                const allTemplates = await this.getAllTemplates();
+                const lowerQuery = query.toLowerCase();
+                
+                return allTemplates.filter(template => {
+                    // Search in domain, name, and template string
+                    return (
+                        template.domain.toLowerCase().includes(lowerQuery) ||
+                        (template.name && template.name.toLowerCase().includes(lowerQuery)) ||
+                        template.template.toLowerCase().includes(lowerQuery)
+                    );
+                });
+            }
+        }
+
+        // Create storage manager instance
+        const storage = new StorageManager();
+
+        // ===========================
+        // GITHUB GIST INTEGRATION
+        // ===========================
+
+        class GithubGistManager {
+            constructor() {
+                this.clientId = 'YOUR_GITHUB_CLIENT_ID'; // You'll need to register a GitHub OAuth app
+                this.redirectUri = window.location.href;
+                this.scope = 'gist';
+                this.token = localStorage.getItem('github_token');
+                this.isAuthenticated = !!this.token;
+            }
+            
+            /**
+             * Initiates GitHub OAuth flow
+             */
+            authenticate() {
+                const authUrl = `https://github.com/login/oauth/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(this.redirectUri)}&scope=${this.scope}`;
+                window.location.href = authUrl;
+            }
+            
+            /**
+             * Handles OAuth callback and exchanges code for token
+             * Note: In a production app, you'd need a server for this exchange
+             * This simplified version assumes a hypothetical endpoint
+             */
+            async handleCallback() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                
+                if (code) {
+                    // In a real app, you'd make a server request here
+                    // This is for demonstration only - you need a server-side component
+                    // to securely exchange the code for a token
+                    console.log('GitHub auth code received');
+                    
+                    // Remove code from URL to prevent refresh issues
+                    const url = new URL(window.location);
+                    url.searchParams.delete('code');
+                    window.history.replaceState({}, '', url);
+                    
+                    // For demo purposes, we'll simulate a successful authentication
+                    // In a real app, this would come from your server after code exchange
+                    this.token = 'simulated_token_for_demo';
+                    localStorage.setItem('github_token', this.token);
+                    this.isAuthenticated = true;
+                    
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            /**
+             * Checks if user is authenticated with GitHub
+             * @returns {boolean} Authentication status
+             */
+            isAuthorized() {
+                return this.isAuthenticated;
+            }
+            
+            /**
+             * Creates or updates a gist with template data
+             * @param {object} templateData - The template data to sync
+             * @returns {Promise} Promise that resolves when sync is complete
+             */
+            async syncTemplate(templateData) {
+                if (!this.isAuthenticated) {
+                    throw new Error('Not authenticated with GitHub');
+                }
+                
+                // In a real app, you would make actual GitHub API calls here
+                console.log('Syncing template to GitHub Gist:', templateData);
+                
+                // Simulated successful sync
+                return { success: true, gistId: 'simulated_gist_id' };
+            }
+            
+            /**
+             * Logs out from GitHub
+             */
+            logout() {
+                localStorage.removeItem('github_token');
+                this.token = null;
+                this.isAuthenticated = false;
+            }
+        }
+
+        // Create GitHub manager instance
+        const github = new GithubGistManager();
+
+        // ===========================
+        // UI MANAGEMENT
+        // ===========================
+        
+        // Current application state
+        const appState = {
+            currentTemplate: null,
+            currentVariables: {},
+            editMode: false,
+            editId: null,
+            githubSyncEnabled: false
+        };
+
+        /**
+         * Initializes the application
+         */
+        function initApp() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Check for GitHub callback
+            handleGithubCallback();
+            
+            // Load history
+            loadHistory();
+        }
+
+        /**
+         * Sets up all event listeners
+         */
+        function setupEventListeners() {
+            // Parse URL button
+            document.getElementById('parseUrlBtn').addEventListener('click', handleParseUrl);
+            
+            // Reset variables button
+            document.getElementById('resetVariablesBtn').addEventListener('click', resetVariables);
+            
+            // Copy URL button
+            document.getElementById('copyUrlBtn').addEventListener('click', copyGeneratedUrl);
+            
+            // Save URL button
+            document.getElementById('saveUrlBtn').addEventListener('click', toggleSaveForm);
+            
+            // URL template input - parse on Enter
+            document.getElementById('urlTemplate').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleParseUrl();
+                }
+            });
+            
+            // Variables form changes
+            document.getElementById('variablesForm').addEventListener('input', updateUrlPreview);
+            
+            // Save name field - save on Enter
+            document.getElementById('saveName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveUrlTemplate();
+                }
+            });
+            
+            // GitHub sync toggle
+            document.getElementById('githubSyncToggle').addEventListener('change', toggleGithubSync);
+            
+            // GitHub auth button
+            document.getElementById('githubAuthBtn').addEventListener('click', () => {
+                github.authenticate();
+            });
+            
+            // Search input
+            document.getElementById('searchHistory').addEventListener('input', handleSearchHistory);
+            
+            // Sidebar toggle for mobile
+            document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+        }
+
+        /**
+         * Handles parsing of URL template
+         */
+        function handleParseUrl() {
+            const urlTemplateInput = document.getElementById('urlTemplate');
+            const urlTemplate = urlTemplateInput.value.trim();
+            
+            if (!urlTemplate) {
+                showToast('Please enter a URL template', 'error');
+                return;
+            }
+            
+            try {
+                // Check if it's a valid URL format when variables are replaced
+                new URL(urlTemplate.replace(/{([^}]+)}/g, 'test'));
+                
+                // Parse the template
+                const parsed = parseUrlTemplate(urlTemplate);
+                
+                // Update app state
+                appState.currentTemplate = parsed.template;
+                appState.currentVariables = parsed.variables;
+                
+                // Generate the variables form
+                generateVariablesForm(parsed.variables);
+                
+                // Update URL preview
+                updateUrlPreview();
+                
+                // Show the variables and preview cards
+                document.getElementById('variablesCard').style.display = 'block';
+                document.getElementById('previewCard').style.display = 'block';
+                
+            } catch (error) {
+                showToast('Invalid URL format', 'error');
+                console.error('URL parsing error:', error);
+            }
+        }
+
+        /**
+         * Generates form fields for variables
+         * @param {object} variables - Object containing variable names
+         */
+        function generateVariablesForm(variables) {
+            const form = document.getElementById('variablesForm');
+            form.innerHTML = '';
+            
+            // Create input fields for each variable
+            for (const variable in variables) {
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group form-variable';
+                
+                const label = document.createElement('label');
+                label.className = 'form-label';
+                label.htmlFor = `var-${variable}`;
+                label.textContent = variable;
+                
+                const input = document.createElement('input');
+                input.className = 'form-control';
+                input.type = 'text';
+                input.id = `var-${variable}`;
+                input.name = variable;
+                input.value = variables[variable];
+                input.dataset.variable = variable;
+                
+                formGroup.appendChild(label);
+                formGroup.appendChild(input);
+                form.appendChild(formGroup);
+            }
+        }
+
+        /**
+         * Updates URL preview based on current variables
+         */
+        function updateUrlPreview() {
+            const form = document.getElementById('variablesForm');
+            const inputs = form.querySelectorAll('input[data-variable]');
+            
+            // Update variable values from form inputs
+            inputs.forEach(input => {
+                const variable = input.dataset.variable;
+                appState.currentVariables[variable] = input.value;
+            });
+            
+            // Generate preview with highlighted variables
+            const preview = document.getElementById('urlPreview');
+            preview.innerHTML = createHighlightedUrl(
+                appState.currentTemplate, 
+                appState.currentVariables
+            );
+        }
+
+        /**
+         * Resets variable form fields to empty values
+         */
+        function resetVariables() {
+            const form = document.getElementById('variablesForm');
+            const inputs = form.querySelectorAll('input[data-variable]');
+            
+            // Clear all input fields
+            inputs.forEach(input => {
+                input.value = '';
+                appState.currentVariables[input.dataset.variable] = '';
+            });
+            
+            // Update the URL preview
+            updateUrlPreview();
+        }
+
+        /**
+         * Copies generated URL to clipboard
+         */
+        function copyGeneratedUrl() {
+            const generatedUrl = buildUrl(appState.currentTemplate, appState.currentVariables);
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(generatedUrl)
+                .then(() => {
+                    showToast('URL copied to clipboard!', 'success');
+                })
+                .catch(err => {
+                    console.error('Could not copy URL:', err);
+                    showToast('Failed to copy URL', 'error');
+                });
+            
+            // If in edit mode, update lastUsed timestamp
+            if (appState.editMode && appState.editId) {
+                storage.getAllTemplates()
+                    .then(templates => {
+                        const template = templates.find(t => t.id === appState.editId);
+                        if (template) {
+                            template.lastUsed = Date.now();
+                            storage.saveTemplate(template);
+                        }
+                    });
+            }
+        }
+
+        /**
+         * Toggles save form visibility
+         */
+        function toggleSaveForm() {
+            const saveNameGroup = document.getElementById('saveNameGroup');
+            
+            if (saveNameGroup.style.display === 'none') {
+                saveNameGroup.style.display = 'block';
+                document.getElementById('saveName').focus();
+                document.getElementById('saveUrlBtn').textContent = 'Confirm Save';
+                document.getElementById('saveUrlBtn').removeEventListener('click', toggleSaveForm);
+                document.getElementById('saveUrlBtn').addEventListener('click', saveUrlTemplate);
+            } else {
+                saveUrlTemplate();
+            }
+        }
+
+        /**
+         * Saves current URL template to storage
+         */
+        function saveUrlTemplate() {
+            const nameInput = document.getElementById('saveName');
+            const name = nameInput.value.trim();
+            
+            // Create template data object
+            const templateData = {
+                id: appState.editMode ? appState.editId : generateId(),
+                template: appState.currentTemplate,
+                variables: {...appState.currentVariables},
+                domain: extractDomain(appState.currentTemplate.replace(/{([^}]+)}/g, 'x')),
+                name: name || `URL Template ${new Date().toLocaleDateString()}`,
+                created: Date.now(),
+                lastUsed: Date.now()
+            };
+            
+            // Save to storage
+            storage.saveTemplate(templateData)
+                .then(() => {
+                    showToast('URL template saved!', 'success');
+                    
+                    // Reset save form
+                    nameInput.value = '';
+                    document.getElementById('saveNameGroup').style.display = 'none';
+                    document.getElementById('saveUrlBtn').textContent = 'Save';
+                    document.getElementById('saveUrlBtn').removeEventListener('click', saveUrlTemplate);
+                    document.getElementById('saveUrlBtn').addEventListener('click', toggleSaveForm);
+                    
+                    // Sync with GitHub if enabled
+                    if (appState.githubSyncEnabled && github.isAuthorized()) {
+                        github.syncTemplate(templateData)
+                            .then(() => {
+                                showToast('Synced to GitHub Gist', 'info');
+                            })
+                            .catch(error => {
+                                console.error('GitHub sync error:', error);
+                                showToast('Failed to sync to GitHub', 'error');
+                            });
+                    }
+                    
+                    // Reset edit mode
+                    appState.editMode = false;
+                    appState.editId = null;
+                    
+                    // Refresh history
+                    loadHistory();
+                })
+                .catch(error => {
+                    console.error('Error saving template:', error);
+                    showToast('Failed to save template', 'error');
+                });
+        }
+
+        /**
+         * Toggles GitHub sync feature
+         */
+        function toggleGithubSync() {
+            const toggle = document.getElementById('githubSyncToggle');
+            appState.githubSyncEnabled = toggle.checked;
+            
+            // Show auth button if enabled but not authenticated
+            if (appState.githubSyncEnabled && !github.isAuthorized()) {
+                document.getElementById('githubAuth').style.display = 'block';
+            } else {
+                document.getElementById('githubAuth').style.display = 'none';
+            }
+            
+            // Update GitHub status
+            updateGithubStatus();
+        }
+
+        /**
+         * Updates GitHub connection status display
+         */
+        function updateGithubStatus() {
+            const statusElement = document.getElementById('githubStatus');
+            
+            if (!appState.githubSyncEnabled) {
+                statusElement.textContent = 'Not enabled';
+                return;
+            }
+            
+            if (github.isAuthorized()) {
+                statusElement.textContent = 'Connected';
+                document.getElementById('githubAuth').style.display = 'none';
+            } else {
+                statusElement.textContent = 'Not connected';
+                document.getElementById('githubAuth').style.display = 'block';
+            }
+        }
+
+        /**
+         * Handles GitHub OAuth callback
+         */
+        function handleGithubCallback() {
+            github.handleCallback()
+                .then(success => {
+                    if (success) {
+                        showToast('Connected to GitHub!', 'success');
+                        updateGithubStatus();
+                    }
+                });
+        }
+
+        /**
+         * Loads saved templates into history sidebar
+         */
+        async function loadHistory() {
+            try {
+                const templates = await storage.getAllTemplates();
+                const historyContainer = document.getElementById('historyContainer');
+                const emptyHistory = document.getElementById('emptyHistory');
+                
+                // Clear current history
+                historyContainer.innerHTML = '';
+                
+                if (templates.length === 0) {
+                    historyContainer.appendChild(emptyHistory);
+                    return;
+                }
+                
+                // Group templates by domain
+                const domainGroups = {};
+                templates.forEach(template => {
+                    if (!domainGroups[template.domain]) {
+                        domainGroups[template.domain] = [];
+                    }
+                    domainGroups[template.domain].push(template);
+                });
+                
+                // Create domain groups in sidebar
+                for (const domain in domainGroups) {
+                    const domainGroup = createDomainGroup(domain, domainGroups[domain]);
+                    historyContainer.appendChild(domainGroup);
+                }
+                
+            } catch (error) {
+                console.error('Error loading history:', error);
+                showToast('Failed to load history', 'error');
+            }
+        }
+
+        /**
+         * Creates a domain group element for the history sidebar
+         * @param {string} domain - The domain name
+         * @param {Array} templates - Array of templates for this domain
+         * @returns {HTMLElement} The created domain group element
+         */
+        function createDomainGroup(domain, templates) {
+            const domainGroup = document.createElement('div');
+            domainGroup.className = 'domain-group';
+            
+            // Create domain header
+            const domainHeader = document.createElement('div');
+            domainHeader.className = 'domain-header';
+            domainHeader.innerHTML = `
+                <span>${domain}</span>
+                <span class="badge">${templates.length}</span>
+            `;
+            
+            // Create container for domain items
+            const domainItems = document.createElement('div');
+            domainItems.className = 'domain-items';
+            
+            // Add templates to domain items
+            templates.forEach(template => {
+                const urlItem = createUrlItem(template);
+                domainItems.appendChild(urlItem);
+            });
+            
+            // Add click handler to toggle visibility
+            domainHeader.addEventListener('click', () => {
+                domainItems.classList.toggle('active');
+            });
+            
+            domainGroup.appendChild(domainHeader);
+            domainGroup.appendChild(domainItems);
+            
+            return domainGroup;
+        }
+
+        /**
+         * Creates a URL item element for the history sidebar
+         * @param {object} template - The template object
+         * @returns {HTMLElement} The created URL item element
+         */
+        function createUrlItem(template) {
+            const urlItem = document.createElement('div');
+            urlItem.className = 'url-item';
+            urlItem.dataset.id = template.id;
+            
+            // Create item content
+            urlItem.innerHTML = `
+                <div class="url-item-title">${template.name}</div>
+                <div class="url-item-path">${template.template}</div>
+                <div class="url-item-actions">
+                    <button class="btn btn-outline btn-small edit-btn">Edit</button>
+                    <button class="btn btn-outline btn-small copy-btn">Copy</button>
+                    <button class="btn btn-outline btn-small delete-btn">Delete</button>
+                </div>
+            `;
+            
+            // Add event listeners
+            urlItem.querySelector('.edit-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                loadTemplateForEdit(template.id);
+            });
+            
+            urlItem.querySelector('.copy-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyTemplate(template);
+            });
+            
+            urlItem.querySelector('.delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteTemplate(template.id);
+            });
+            
+            // Click on item loads it for editing
+            urlItem.addEventListener('click', () => {
+                loadTemplateForEdit(template.id);
+            });
+            
+            return urlItem;
+        }
+
+        /**
+         * Loads a template for editing
+         * @param {string} id - The template ID to edit
+         */
+        async function loadTemplateForEdit(id) {
+            try {
+                const templates = await storage.getAllTemplates();
+                const template = templates.find(t => t.id === id);
+                
+                if (!template) {
+                    showToast('Template not found', 'error');
+                    return;
+                }
+                
+                // Set app state
+                appState.currentTemplate = template.template;
+                appState.currentVariables = {...template.variables};
+                appState.editMode = true;
+                appState.editId = template.id;
+                
+                // Update UI
+                document.getElementById('urlTemplate').value = template.template;
+                generateVariablesForm(template.variables);
+                document.getElementById('saveName').value = template.name;
+                document.getElementById('variablesCard').style.display = 'block';
+                document.getElementById('previewCard').style.display = 'block';
+                
+                // Update URL preview
+                updateUrlPreview();
+                
+                // Update lastUsed timestamp
+                template.lastUsed = Date.now();
+                await storage.saveTemplate(template);
+                
+                // Show toast
+                showToast('Template loaded for editing', 'info');
+                
+                // In mobile view, close sidebar after selection
+                if (window.innerWidth <= 768) {
+                    document.getElementById('historySidebar').classList.remove('expanded');
+                }
+                
+            } catch (error) {
+                console.error('Error loading template:', error);
+                showToast('Failed to load template', 'error');
+            }
+        }
+
+        /**
+         * Copies a template URL to clipboard
+         * @param {object} template - The template to copy
+         */
+        function copyTemplate(template) {
+            const url = buildUrl(template.template, template.variables);
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    showToast('URL copied to clipboard!', 'success');
+                    
+                    // Update lastUsed timestamp
+                    template.lastUsed = Date.now();
+                    storage.saveTemplate(template);
+                })
+                .catch(err => {
+                    console.error('Could not copy URL:', err);
+                    showToast('Failed to copy URL', 'error');
+                });
+        }
+
+        /**
+         * Deletes a template from storage
+         * @param {string} id - The template ID to delete
+         */
+        function deleteTemplate(id) {
+            // Confirm deletion
+            if (!confirm('Are you sure you want to delete this template?')) {
+                return;
+            }
+            
+            storage.deleteTemplate(id)
+                .then(() => {
+                    showToast('Template deleted', 'success');
+                    loadHistory();
+                })
+                .catch(error => {
+                    console.error('Error deleting template:', error);
+                    showToast('Failed to delete template', 'error');
+                });
+        }
+
+        /**
+         * Handles search in history sidebar
+         */
+        function handleSearchHistory() {
+            const searchInput = document.getElementById('searchHistory');
+            const query = searchInput.value.trim();
+            
+            // Search templates
+            storage.searchTemplates(query)
+                .then(results => {
+                    const historyContainer = document.getElementById('historyContainer');
+                    const emptyHistory = document.getElementById('emptyHistory');
+                    
+                    // Clear current history
+                    historyContainer.innerHTML = '';
+                    
+                    if (results.length === 0) {
+                        const noResults = document.createElement('div');
+                        noResults.className = 'empty-history';
+                        noResults.textContent = query ? 'No matching results' : 'No saved URLs yet';
+                        historyContainer.appendChild(noResults);
+                        return;
+                    }
+                    
+                    // Group results by domain
+                    const domainGroups = {};
+                    results.forEach(template => {
+                        if (!domainGroups[template.domain]) {
+                            domainGroups[template.domain] = [];
+                        }
+                        domainGroups[template.domain].push(template);
+                    });
+                    
+                    // Create domain groups in sidebar
+                    for (const domain in domainGroups) {
+                        const domainGroup = createDomainGroup(domain, domainGroups[domain]);
+                        historyContainer.appendChild(domainGroup);
+                        
+                        // If searching, auto-expand all groups
+                        if (query) {
+                            domainGroup.querySelector('.domain-items').classList.add('active');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching templates:', error);
+                    showToast('Search failed', 'error');
+                });
+        }
+
+        /**
+         * Toggles sidebar visibility on mobile
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('historySidebar');
+            sidebar.classList.toggle('expanded');
+        }
+
+        // ===========================
+        // EXAMPLE DATA INITIALIZATION
+        // ===========================
+        
+        /**
+         * Initializes the app with example data for first-time users
+         */
+        async function initExampleData() {
+            try {
+                const templates = await storage.getAllTemplates();
+                
+                // Only add example if no templates exist
+                if (templates.length === 0) {
+                    // Example 1: Facebook business URL
+                    const example1 = {
+                        template: 'https://business.facebook.com/latest/settings/whatsapp_account?business_id={business_id}',
+                        variables: { business_id: '599966726031135' },
+                        domain: 'business.facebook.com',
+                        name: 'Facebook Business WhatsApp Settings',
+                        created: Date.now(),
+                        lastUsed: Date.now()
+                    };
+                    
+                    // Example 2: Generic API URL
+                    const example2 = {
+                        template: 'https://api.example.com/v1/users/{user_id}/reports?from={start_date}&to={end_date}',
+                        variables: { 
+                            user_id: '12345', 
+                            start_date: '2023-01-01', 
+                            end_date: '2023-12-31' 
+                        },
+                        domain: 'api.example.com',
+                        name: 'User Reports API',
+                        created: Date.now() - 100000,
+                        lastUsed: Date.now() - 100000
+                    };
+                    
+                    // Save examples
+                    await storage.saveTemplate(example1);
+                    await storage.saveTemplate(example2);
+                    
+                    // Load history to display examples
+                    loadHistory();
+                }
+            } catch (error) {
+                console.error('Error initializing example data:', error);
+            }
+        }
+
+        // ===========================
+        // APP INITIALIZATION
+        // ===========================
+        
+        // Initialize the app when DOM content is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            initExampleData();
+        });
+    </script>
+</body>
+</html>
